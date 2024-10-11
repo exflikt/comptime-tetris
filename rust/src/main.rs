@@ -308,6 +308,9 @@ impl Game {
         self.next_tetromino = rand::random();
         self.rot = Default::default();
         self.swapped = false;
+        if !self._movable_with(self.rot)(0, 0) {
+            self.state = State::Over;
+        }
     }
 
     fn _movable_with(&self, rot: Rotation) -> impl Fn(i8, i8) -> bool + '_ {
@@ -456,7 +459,7 @@ impl Game {
                 }
             }
             State::Pause => {
-                if input::is_key_released(KeyCode::Escape) {
+                if input::is_key_released(KeyCode::Enter) {
                     self.state = State::Play;
                 } else if input::is_key_pressed(KeyCode::Q) {
                     self.state = State::WindowClose;
@@ -497,21 +500,36 @@ impl Game {
         let y_next = y_next + GRID_CELL_SIZE * 5.;
         draw_tetromino_box(Some(self.next_tetromino), (right_bar, y_next));
 
+        if self.state != State::Play {
+            let [x, y] = [MARGIN; 2];
+            let (w, h) = (
+                GRID_CELL_SIZE * f32::from(Grid::WIDTH),
+                GRID_CELL_SIZE * f32::from(Grid::HEIGHT),
+            );
+            shapes::draw_rectangle(x, y, w, h, color_u8!(3, 2, 1, 192));
+        }
         if self.state == State::Pause {
-            text::draw_text("PAUSED", 75., SCREEN_HEIGHT / 2. - 50., 50., colors::WHITE);
-            let (x, y) = (45., SCREEN_HEIGHT / 2.);
-            text::draw_text("Press ESCAPE to unpause", x, y, 20., colors::LIGHTGRAY);
+            let [base_x, base_y] = [GRID_CELL_SIZE * 2.5, SCREEN_HEIGHT / 2.];
+            let [x, y] = [base_x + GRID_CELL_SIZE, base_y - 50.];
+            text::draw_text("PAUSED", x, y, 50., colors::WHITE);
+            let msg = "Press Enter to unpause";
+            text::draw_text(msg, base_x, base_y, 20., colors::LIGHTGRAY);
         }
         if self.state == State::Over {
-            let (x, y) = (45., SCREEN_HEIGHT / 2. - 50.);
+            let [base_x, base_y] = [GRID_CELL_SIZE * 2.5, SCREEN_HEIGHT / 2.];
+            let [x, y] = [base_x + GRID_CELL_SIZE / 2., base_y - 50.];
             text::draw_text("GAME OVER", x, y, 42., colors::WHITE);
-            let (x, y) = (41., SCREEN_HEIGHT / 2.);
-            text::draw_text("Press ENTER to continue", x, y, 20., colors::LIGHTGRAY);
+            let msg = "Press ENTER to restart";
+            text::draw_text(msg, base_x, base_y, 20., colors::LIGHTGRAY);
         }
         if self.state == State::Start {
-            text::draw_text("TETRIS", 75., SCREEN_HEIGHT / 2. - 50., 50., colors::WHITE);
-            let (x, y) = (41., SCREEN_HEIGHT / 2.);
-            text::draw_text("Press ENTER to continue", x, y, 20., colors::LIGHTGRAY);
+            let [base_x, base_y] = [GRID_CELL_SIZE * 2.5, SCREEN_HEIGHT / 2.];
+            let [x, y] = [base_x + GRID_CELL_SIZE, base_y - 50.];
+            text::draw_text("TETRIS", x, y, 50., colors::WHITE);
+            let msg = "Press ENTER to start";
+            text::draw_text(msg, base_x, base_y, 20., colors::LIGHTGRAY);
+            let [x, y] = [base_x + GRID_CELL_SIZE, base_y + 50.];
+            text::draw_text("Press Q to quit", x, y, 20., colors::LIGHTGRAY);
         }
 
         fn draw_grid(grid: &Grid) {
